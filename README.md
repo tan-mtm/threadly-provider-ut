@@ -32,4 +32,3 @@ Then open `http://localhost:4173`.
 4. Edit the public studio profile and preview the customer view.
 5. Update starting prices and availability.
 6. Find an accepted job and determine its current status.
-
