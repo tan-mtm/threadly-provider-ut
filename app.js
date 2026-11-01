@@ -1,8 +1,9 @@
 const providers = [
-  { id: 'quick-hem', name: 'Priya', studio: 'Quick Hem Studio', area: 'Goleta', rating: '4.6', services: ['Hemming','Alterations','Repairs'], price: 12, turnaround: 'Same-day hemming when booked before noon', avatar: 'P', tone: 'sage', verified: true },
-  { id: 'taytum', name: 'Taytum', studio: 'Taytum Nykelle', area: 'Goleta', rating: '5.0', services: ['Hemming','Custom garment','Alterations'], price: 15, turnaround: 'Hemming 2–3 days; custom orders 2–4 weeks', avatar: 'T', tone: '', verified: true },
-  { id: 'odette', name: 'Odette', studio: 'Odette Bridal Atelier', area: 'Santa Barbara', rating: '4.9', services: ['Wedding dress','Alterations','Custom garment'], price: 45, turnaround: 'Bridal fittings by appointment; 1–2 weeks typical', avatar: 'O', tone: '', verified: true },
-  { id: 'marisol', name: 'Marisol', studio: 'Vega Stitch & Alter', area: 'Santa Barbara', rating: '4.8', services: ['Alterations','Tailoring','Repairs'], price: 20, turnaround: 'Most jobs in 3–5 days', avatar: 'M', tone: 'sage', verified: true }
+  { id: 'taytum', name: 'Taytum', studio: 'Taytum Nykelle', area: 'Goleta', rating: '5.0', services: ['Hemming','Custom garment','Alterations'], price: 15, turnaround: 'Hemming 2–3 days; custom orders 2–4 weeks', image: './assets/founder.jpg.png', verified: true },
+  { id: 'marisol', name: 'Marisol', studio: 'Vega Stitch & Alter', area: 'Downtown', rating: '4.8', services: ['Alterations','Tailoring','Repairs'], price: 20, turnaround: 'Most jobs in 3–5 days', image: './assets/sewist-marisol.jpg', verified: true },
+  { id: 'odette', name: 'Odette', studio: 'Odette Bridal Atelier', area: 'Riviera', rating: '4.9', services: ['Wedding dress','Alterations','Custom garment'], price: 45, turnaround: 'Bridal fittings by appointment; 1–2 weeks typical', image: './assets/sewist-odette.jpg', verified: true },
+  { id: 'jamie', name: 'Jamie', studio: 'Blue Thread Denim Works', area: 'Funk Zone', rating: '4.7', services: ['Repairs','Alterations','Tailoring'], price: 22, turnaround: 'Repairs often same week', image: './assets/sewist-jamie.jpg', verified: false },
+  { id: 'priya', name: 'Priya', studio: 'Quick Hem Studio', area: 'Goleta', rating: '4.6', services: ['Hemming','Alterations','Repairs'], price: 12, turnaround: 'Same-day hemming when booked before noon', image: './assets/sewist-priya.jpg', verified: true }
 ];
 
 const defaultRequests = [
@@ -39,29 +40,33 @@ function renderCustomer(hash){
   const profileMatch = hash.match(/^#\/seamstress\/(.+)$/);
   if(profileMatch) return renderPublicProfile(profileMatch[1]);
   const filtered = providers.filter(p => (state.filter.service==='All services'||p.services.includes(state.filter.service)) && (state.filter.area==='All areas'||p.area===state.filter.area));
-  main.innerHTML = `<div class="page">
-    <section class="hero">
-      <div><div class="eyebrow">Local skill, easier to find</div><h1>Connecting you to the people who sew.</h1><p class="lead">Compare local seamstresses, see their work and starting prices, and prepare a quote request.</p>
-        <div class="search-panel" role="search">
-          <div class="field"><label for="service-filter">What do you need?</label><select id="service-filter">${['All services','Hemming','Alterations','Repairs','Custom garment','Wedding dress','Tailoring'].map(x=>`<option ${x===state.filter.service?'selected':''}>${x}</option>`).join('')}</select></div>
-          <div class="field"><label for="area-filter">Where?</label><select id="area-filter">${['All areas','Santa Barbara','Goleta'].map(x=>`<option ${x===state.filter.area?'selected':''}>${x}</option>`).join('')}</select></div>
-          <button class="btn" id="search-btn">Search</button>
-        </div>
-      </div><div class="hero-art" aria-label="Abstract sewing illustration"><div class="stitch-scene"></div></div>
-    </section>
-    <section aria-labelledby="results-title"><div class="section-head"><div><div class="eyebrow">${filtered.length} matches</div><h2 id="results-title">Find a seamstress</h2></div><div class="segmented" aria-label="View"><button class="active">List</button><button onclick="toast('Map view is represented in the original prototype')">Map</button></div></div>
-      <div class="listing-grid">${filtered.length?filtered.map(providerCard).join(''):`<div class="empty-note">No seamstresses match these filters. Try another service or area.</div>`}</div>
-    </section>
-  </div>`;
-  document.querySelector('#search-btn').onclick=()=>{ state.filter.service=document.querySelector('#service-filter').value;state.filter.area=document.querySelector('#area-filter').value;renderCustomer('#/search'); };
+  main.innerHTML = `<div class="page search-page"><section aria-labelledby="results-title">
+    <div class="section-head search-heading"><h1 id="results-title">Find a seamstress</h1><div class="view-actions" aria-label="View"><button class="active">List</button><button onclick="toast('Map view is represented beside the listings')">Map</button><button onclick="toast('Favorites are stored locally in this prototype')">Favorite seamstress</button></div></div>
+    <div class="stitched-rule"></div>
+    <div class="search-filters" role="search">
+      <div class="field"><label for="service-filter">Service</label><select id="service-filter">${['All services','Hemming','Alterations','Repairs','Custom garment','Wedding dress','Tailoring'].map(x=>`<option ${x===state.filter.service?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label for="area-filter">Area</label><select id="area-filter">${['All areas','Goleta','Downtown','Riviera','Funk Zone'].map(x=>`<option ${x===state.filter.area?'selected':''}>${x}</option>`).join('')}</select></div>
+    </div>
+    <div class="search-layout"><div class="listing-grid">${filtered.length?filtered.map(providerCard).join(''):`<div class="empty-note">No seamstresses match these filters. Try another service or area.</div>`}</div>${filtered.length?mapPreview():''}</div>
+  </section></div>`;
+  const applyFilters=()=>{ state.filter.service=document.querySelector('#service-filter').value;state.filter.area=document.querySelector('#area-filter').value;renderCustomer('#/search'); };
+  document.querySelector('#service-filter').onchange=applyFilters;
+  document.querySelector('#area-filter').onchange=applyFilters;
 }
 
-function providerCard(p){ return `<a class="card provider-card" href="#/seamstress/${p.id}"><div class="avatar ${p.tone}">${p.avatar}</div><div><div class="card-top"><div><h3>${esc(p.name)}</h3><div class="small muted">${esc(p.studio)} · ${esc(p.area)}</div></div><div class="rating">★ ${p.rating}</div></div>${p.verified?'<div class="verified">✓ Verified profile</div>':''}<div class="tag-row">${p.services.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}</div><div class="card-top"><span class="price">From ${money(p.price)}</span><span class="small muted">${esc(p.turnaround)}</span></div></div></a>`; }
+function providerCard(p){ return `<article class="card provider-card-wrap"><a class="provider-card" href="#/seamstress/${p.id}"><img class="provider-photo" src="${p.image}" alt="${esc(p.name)} of ${esc(p.studio)}"><div class="provider-card-body"><div class="card-top"><div><h2>${esc(p.name)}</h2><div class="muted">${esc(p.studio)}</div></div>${p.verified?'<span class="verified">Verified</span>':''}</div><div class="area">${esc(p.area)}</div><div class="tag-row">${p.services.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}</div><div class="card-top card-price"><span class="price">From ${money(p.price)}</span><span class="rating">★ ${p.rating}</span></div><p class="small muted">${esc(p.turnaround)}</p></div></a><button class="favorite" aria-label="Add ${esc(p.name)} to favorites" onclick="event.stopPropagation();this.classList.toggle('selected');toast('Favorite updated locally')">♡</button></article>`; }
+
+function mapPreview(){ return `<aside class="map-card" aria-label="Map of seamstresses in Santa Barbara and Goleta"><div class="map-controls"><button aria-label="Zoom in">+</button><button aria-label="Zoom out">−</button></div><span class="map-pin pin-one"></span><span class="map-pin pin-two"></span><span class="map-pin pin-three"></span><span class="map-pin pin-four"></span><div class="map-label goleta">Goleta</div><div class="map-label santa-barbara">Santa Barbara</div></aside>`; }
 
 function renderPublicProfile(id){
   const p=providers.find(x=>x.id===id)||providers[2];
-  main.innerHTML=`<div class="page"><a href="#/search" class="small muted">← Back to results</a><section class="card profile-hero"><div class="avatar ${p.tone}">${p.avatar}</div><div class="profile-title"><div class="verified">✓ Verified · ${esc(p.studio)}</div><h1>${esc(p.name)}</h1><div class="profile-meta"><span>★ ${p.rating}</span><span>${esc(p.area)}</span><span>Replies within 24 hours</span></div></div><button class="btn" onclick="openCustomerQuote('${p.id}')">Request a quote</button></section>
-    <div class="content-grid"><div><section class="card content-card"><h2>Meet ${esc(p.name)}</h2><p class="lead">${p.id==='odette'?esc(state.profile.bio):`A local specialist focused on ${p.services.join(', ').toLowerCase()}.`}</p></section><section class="card content-card" style="margin-top:20px"><h2>Portfolio</h2><div class="portfolio"><div>Portfolio image 1</div><div>Portfolio image 2</div><div>Portfolio image 3</div></div></section></div><aside class="card content-card"><h2>Services & starting prices</h2>${p.services.map((s,i)=>`<div class="service-row"><span>${esc(s)}</span><strong>From ${money(p.price+i*18)}</strong></div>`).join('')}<h3 style="margin-top:22px">Turnaround</h3><p class="muted">${esc(p.turnaround)}</p></aside></div></div>`;
+  const isTaytum=p.id==='taytum';
+  const about=isTaytum?"Taytum has been sewing for three years and runs Taytum Nykelle, a Goleta-based sewing business and clothing line. She specializes in precise, clean hemming and made-to-order custom pieces designed around each client's measurements and style.":(p.id==='odette'?state.profile.bio:`${p.name} is a local specialist focused on ${p.services.join(', ').toLowerCase()}.`);
+  const prices=isTaytum?[['Hemming','$20'],['Custom garment','$150'],['Custom order consultation','Free'],['Basic alterations','$25'],['Repairs','$15']]:p.services.map((s,i)=>[s,money(p.price+i*18)]);
+  main.innerHTML=`<div class="page profile-page"><section class="profile-hero"><img class="profile-photo" src="${p.image}" alt="${esc(p.name)} of ${esc(p.studio)}"><div class="profile-title"><div class="profile-heading"><h1>${esc(p.name)}</h1><button class="favorite profile-favorite" aria-label="Add ${esc(p.name)} to favorites">♡</button>${p.verified?'<span class="verified">Verified</span>':''}</div><p class="muted studio-name">${esc(p.studio)}</p><p class="muted">${esc(p.area)}</p><div class="profile-meta"><span class="rating">★ ${p.rating}</span><span>${isTaytum?'3 years experience':'Experienced local sewist'}</span></div><p class="muted small">Usually replies within a few hours</p><button class="btn" onclick="openCustomerQuote('${p.id}')">Request a quote</button></div></section><div class="stitched-rule"></div>
+    <section class="card content-card meet-card"><h2>Meet ${esc(p.name)}</h2><p>${esc(about)}</p></section>
+    <section class="portfolio-section"><h2>Portfolio</h2><div class="portfolio">${isTaytum?['1','2','3'].map(n=>`<img src="./assets/portfolio-${n}.jpg.png" alt="Taytum Nykelle portfolio ${n}">`).join(''):`<img src="${p.image}" alt="${esc(p.name)} portfolio"><img src="${p.image}" alt="${esc(p.name)} portfolio detail"><img src="${p.image}" alt="${esc(p.name)} studio work">`}</div></section>
+    <div class="profile-bottom"><section class="card content-card"><h2>Services & starting prices</h2>${prices.map(([s,price])=>`<div class="service-row"><span>${esc(s)}</span><strong>${price==='Free'?'Free':`From ${price}`}</strong></div>`).join('')}</section><aside><section class="card content-card"><h2>Hours</h2><p>Mon–Fri 10am–6pm, Sat by appointment</p></section><section class="card content-card turnaround-card"><h2>Turnaround</h2><p>${esc(p.turnaround)}</p></section><button class="btn profile-cta" onclick="openCustomerQuote('${p.id}')">Request a quote</button></aside></div></div>`;
 }
 
 function openCustomerQuote(id){
