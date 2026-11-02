@@ -18,6 +18,13 @@ const servicesDefault = [
   { id:'bridal-hemming', name:'Bridal hemming', note:'Original hem when possible', price:45 },
   { id:'custom', name:'Custom garment', note:'Consultation required', price:200 }
 ];
+const heroPlaces = [
+  { src:'./assets/shop-hero.png', alt:'A neighborhood sewing shop with a striped awning, dress forms, and spools of thread in the window', position:'center 30%' },
+  { src:'./assets/street-shop.jpg', alt:'A neighborhood alteration shop viewed from the street', position:'center' },
+  { src:'./assets/thread-studio.jpg', alt:'A sewing studio filled with colorful thread and fabric', position:'center' },
+  { src:'./assets/workroom.jpg', alt:'A sewing workroom with machines, dress forms, and tables of fabric', position:'center' },
+  { src:'./assets/window-table.jpg', alt:'A sunlit sewing table beside a shop window', position:'center' }
+];
 let state = {
   requests: JSON.parse(localStorage.getItem('threadly-requests') || 'null') || defaultRequests,
   profile: JSON.parse(localStorage.getItem('threadly-profile') || 'null') || profileDefault,
@@ -46,9 +53,36 @@ function resetTestData(){
 function toast(message){ const el=document.querySelector('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),2600); }
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let motionEnabled = localStorage.getItem('threadly-motion') !== 'off' && !reduceMotion.matches;
+let heroIndex = 0;
+let homeCarouselTimer = null;
 function applyMotionPreference(){ document.body.classList.toggle('motion-off',!motionEnabled); motionToggle.textContent=`Motion: ${motionEnabled?'on':'off'}`; motionToggle.setAttribute('aria-pressed',String(motionEnabled)); }
 function startSewTransition(){ if(!motionEnabled || reduceMotion.matches) return; sewTransition.classList.remove('is-sewing'); void sewTransition.offsetWidth; sewTransition.classList.add('is-sewing'); }
-motionToggle.addEventListener('click',()=>{ motionEnabled=!motionEnabled; localStorage.setItem('threadly-motion',motionEnabled?'on':'off'); applyMotionPreference(); toast(`Motion turned ${motionEnabled?'on':'off'}`); });
+function stopHomeCarousel(){ if(homeCarouselTimer){ clearInterval(homeCarouselTimer); homeCarouselTimer=null; } }
+function startHomeCarousel(){
+  stopHomeCarousel();
+  if(!motionEnabled || reduceMotion.matches || location.hash!=='#/home' || !document.querySelector('.place-gallery')) return;
+  homeCarouselTimer=setInterval(()=>setHeroPlace((heroIndex+1)%heroPlaces.length,false),4800);
+}
+function setHeroPlace(index,restart=true){
+  heroIndex=(index+heroPlaces.length)%heroPlaces.length;
+  document.querySelectorAll('.hero-place-image').forEach((image,i)=>{
+    const active=i===heroIndex;
+    image.classList.toggle('active',active);
+    image.alt=active?heroPlaces[i].alt:'';
+    image.setAttribute('aria-hidden',String(!active));
+  });
+  document.querySelectorAll('.gallery-dots button').forEach((button,i)=>{
+    const active=i===heroIndex;
+    button.classList.toggle('active',active);
+    if(active) button.setAttribute('aria-current','true'); else button.removeAttribute('aria-current');
+  });
+  if(restart){
+    const gallery=document.querySelector('.place-gallery');
+    if(gallery && (gallery.matches(':hover') || gallery.contains(document.activeElement))) stopHomeCarousel();
+    else startHomeCarousel();
+  }
+}
+motionToggle.addEventListener('click',()=>{ motionEnabled=!motionEnabled; localStorage.setItem('threadly-motion',motionEnabled?'on':'off'); applyMotionPreference(); if(motionEnabled) startHomeCarousel(); else stopHomeCarousel(); toast(`Motion turned ${motionEnabled?'on':'off'}`); });
 applyMotionPreference();
 
 function setActive(area){
@@ -57,6 +91,7 @@ function setActive(area){
 function route(){
   startSewTransition();
   const hash = location.hash || '#/home';
+  if(hash!=='#/home') stopHomeCarousel();
   if(hash.startsWith('#/provider')){ setActive('provider'); renderProvider(hash.replace('#/provider','') || '/'); }
   else if(hash==='#/home'){ setActive('home'); renderHome(); }
   else if(hash==='#/map'){ setActive('map'); renderMapView(); }
@@ -90,7 +125,15 @@ function providerCard(p){ return `<article class="card provider-card-wrap"><a cl
 function mapPreview(){ return `<aside class="map-card" aria-label="Map of seamstresses in Santa Barbara and Goleta"><div class="map-controls"><button aria-label="Zoom in">+</button><button aria-label="Zoom out">−</button></div><span class="map-pin pin-one"></span><span class="map-pin pin-two"></span><span class="map-pin pin-three"></span><span class="map-pin pin-four"></span><div class="map-label goleta">Goleta</div><div class="map-label santa-barbara">Santa Barbara</div></aside>`; }
 
 function renderHome(){
-  main.innerHTML=`<div class="page home-page"><section class="home-hero"><div class="place-gallery"><img src="./assets/shop-hero.png" alt="A neighborhood sewing shop with a striped awning, dress forms, and spools of thread in the window"><div class="gallery-dots" aria-label="Sewing places"><button class="active" aria-label="Show sewing place 1"></button><button aria-label="Show sewing place 2"></button><button aria-label="Show sewing place 3"></button><button aria-label="Show sewing place 4"></button><button aria-label="Show sewing place 5"></button></div></div><div class="home-copy"><h1>Threadly.<br>Connecting you to the people who sew.</h1><p>Hemming, alterations, custom garments, and repairs from seamstresses near you. See their work, compare starting prices, and request a quote without chasing messages.</p><div class="home-search"><div class="field"><label for="home-service">What do you need?</label><select id="home-service"><option>What do you need?</option><option>Hemming</option><option>Alterations</option><option>Repairs</option><option>Custom garment</option></select></div><div class="field"><label for="home-area">Where?</label><select id="home-area"><option>Where?</option><option>Goleta</option><option>Downtown</option><option>Riviera</option></select></div><button class="btn" onclick="location.hash='#/search'">Search</button></div></div></section></div>`;
+  stopHomeCarousel();
+  main.innerHTML=`<div class="page home-page"><section class="home-hero"><div class="place-gallery" role="region" aria-roledescription="carousel" aria-label="Sewing places"><div class="place-gallery-stage">${heroPlaces.map((place,i)=>`<img class="hero-place-image ${i===heroIndex?'active':''}" src="${place.src}" alt="${i===heroIndex?esc(place.alt):''}" aria-hidden="${i!==heroIndex}" style="object-position:${place.position}">`).join('')}</div><div class="gallery-dots">${heroPlaces.map((_,i)=>`<button class="${i===heroIndex?'active':''}" aria-label="Show sewing place ${i+1}" ${i===heroIndex?'aria-current="true"':''} data-place-index="${i}"></button>`).join('')}</div></div><div class="home-copy"><h1>Threadly.<br>Connecting you to the people who sew.</h1><p>Hemming, alterations, custom garments, and repairs from seamstresses near you. See their work, compare starting prices, and request a quote without chasing messages.</p><div class="home-search"><div class="field"><label for="home-service">What do you need?</label><select id="home-service"><option>What do you need?</option><option>Hemming</option><option>Alterations</option><option>Repairs</option><option>Custom garment</option></select></div><div class="field"><label for="home-area">Where?</label><select id="home-area"><option>Where?</option><option>Goleta</option><option>Downtown</option><option>Riviera</option></select></div><button class="btn" onclick="location.hash='#/search'">Search</button></div></div></section></div>`;
+  const gallery=document.querySelector('.place-gallery');
+  gallery.querySelectorAll('[data-place-index]').forEach(button=>button.addEventListener('click',()=>setHeroPlace(Number(button.dataset.placeIndex))));
+  gallery.addEventListener('pointerenter',stopHomeCarousel);
+  gallery.addEventListener('pointerleave',startHomeCarousel);
+  gallery.addEventListener('focusin',stopHomeCarousel);
+  gallery.addEventListener('focusout',event=>{ if(!gallery.contains(event.relatedTarget)) startHomeCarousel(); });
+  startHomeCarousel();
 }
 
 function renderMapView(){
