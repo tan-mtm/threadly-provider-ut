@@ -22,16 +22,25 @@ let state = {
 
 const main = document.querySelector('#main');
 const modalRoot = document.querySelector('#modal-root');
+const sewTransition = document.querySelector('#sew-transition');
+const motionToggle = document.querySelector('#motion-toggle');
 const esc = (v='') => String(v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const money = n => `$${Number(n).toFixed(0)}`;
 const statusLabel = s => ({new:'New request',quoted:'Quote sent',accepted:'Accepted',declined:'Declined'}[s] || s);
 function persist(){ localStorage.setItem('threadly-requests',JSON.stringify(state.requests)); localStorage.setItem('threadly-profile',JSON.stringify(state.profile)); localStorage.setItem('threadly-availability',JSON.stringify(state.availability)); }
 function toast(message){ const el=document.querySelector('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),2600); }
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+let motionEnabled = localStorage.getItem('threadly-motion') !== 'off' && !reduceMotion.matches;
+function applyMotionPreference(){ document.body.classList.toggle('motion-off',!motionEnabled); motionToggle.textContent=`Motion: ${motionEnabled?'on':'off'}`; motionToggle.setAttribute('aria-pressed',String(motionEnabled)); }
+function startSewTransition(){ if(!motionEnabled || reduceMotion.matches) return; sewTransition.classList.remove('is-sewing'); void sewTransition.offsetWidth; sewTransition.classList.add('is-sewing'); }
+motionToggle.addEventListener('click',()=>{ motionEnabled=!motionEnabled; localStorage.setItem('threadly-motion',motionEnabled?'on':'off'); applyMotionPreference(); toast(`Motion turned ${motionEnabled?'on':'off'}`); });
+applyMotionPreference();
 
 function setActive(area){
   document.querySelectorAll('[data-nav],[data-page]').forEach(a=>a.classList.toggle('active',a.dataset.nav===area||a.dataset.page===area));
 }
 function route(){
+  startSewTransition();
   const hash = location.hash || '#/home';
   if(hash.startsWith('#/provider')){ setActive('provider'); renderProvider(hash.replace('#/provider','') || '/'); }
   else if(hash==='#/home'){ setActive('home'); renderHome(); }
