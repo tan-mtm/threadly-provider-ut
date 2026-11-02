@@ -28,10 +28,17 @@ const statusLabel = s => ({new:'New request',quoted:'Quote sent',accepted:'Accep
 function persist(){ localStorage.setItem('threadly-requests',JSON.stringify(state.requests)); localStorage.setItem('threadly-profile',JSON.stringify(state.profile)); localStorage.setItem('threadly-availability',JSON.stringify(state.availability)); }
 function toast(message){ const el=document.querySelector('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),2600); }
 
-function setActive(area){ document.querySelectorAll('[data-nav]').forEach(a=>a.classList.toggle('active',a.dataset.nav===area)); }
+function setActive(area){
+  document.querySelectorAll('[data-nav],[data-page]').forEach(a=>a.classList.toggle('active',a.dataset.nav===area||a.dataset.page===area));
+}
 function route(){
   const hash = location.hash || '#/search';
   if(hash.startsWith('#/provider')){ setActive('provider'); renderProvider(hash.replace('#/provider','') || '/'); }
+  else if(hash==='#/home'){ setActive('home'); renderHome(); }
+  else if(hash==='#/map'){ setActive('map'); renderMapView(); }
+  else if(hash==='#/help'){ setActive('help'); renderHelp(); }
+  else if(hash==='#/about'){ setActive('about'); renderAbout(); }
+  else if(hash.startsWith('#/request/')){ setActive('search'); renderQuoteRequest(hash.split('/').pop()); }
   else { setActive('search'); renderCustomer(hash); }
   window.scrollTo({top:0});
 }
@@ -41,7 +48,7 @@ function renderCustomer(hash){
   if(profileMatch) return renderPublicProfile(profileMatch[1]);
   const filtered = providers.filter(p => (state.filter.service==='All services'||p.services.includes(state.filter.service)) && (state.filter.area==='All areas'||p.area===state.filter.area));
   main.innerHTML = `<div class="page search-page"><section aria-labelledby="results-title">
-    <div class="section-head search-heading"><h1 id="results-title">Find a seamstress</h1><div class="view-actions" aria-label="View"><button class="active">List</button><button onclick="toast('Map view is represented beside the listings')">Map</button><button onclick="toast('Favorites are stored locally in this prototype')">Favorite seamstress</button></div></div>
+    <div class="section-head search-heading"><h1 id="results-title">Find a seamstress</h1><div class="view-actions" aria-label="View"><button class="active">List</button><button onclick="location.hash='#/map'">Map</button><button onclick="toast('Favorites are stored locally in this prototype')">Favorite seamstress</button></div></div>
     <div class="stitched-rule"></div>
     <div class="search-filters" role="search">
       <div class="field"><label for="service-filter">Service</label><select id="service-filter">${['All services','Hemming','Alterations','Repairs','Custom garment','Wedding dress','Tailoring'].map(x=>`<option ${x===state.filter.service?'selected':''}>${x}</option>`).join('')}</select></div>
@@ -58,15 +65,38 @@ function providerCard(p){ return `<article class="card provider-card-wrap"><a cl
 
 function mapPreview(){ return `<aside class="map-card" aria-label="Map of seamstresses in Santa Barbara and Goleta"><div class="map-controls"><button aria-label="Zoom in">+</button><button aria-label="Zoom out">−</button></div><span class="map-pin pin-one"></span><span class="map-pin pin-two"></span><span class="map-pin pin-three"></span><span class="map-pin pin-four"></span><div class="map-label goleta">Goleta</div><div class="map-label santa-barbara">Santa Barbara</div></aside>`; }
 
+function renderHome(){
+  main.innerHTML=`<div class="page home-page"><section class="home-hero"><div class="place-gallery"><img src="./assets/shop-hero.png" alt="A neighborhood sewing shop with a striped awning, dress forms, and spools of thread in the window"><div class="gallery-dots" aria-label="Sewing places"><button class="active" aria-label="Show sewing place 1"></button><button aria-label="Show sewing place 2"></button><button aria-label="Show sewing place 3"></button><button aria-label="Show sewing place 4"></button><button aria-label="Show sewing place 5"></button></div></div><div class="home-copy"><h1>Threadly.<br>Connecting you to the people who sew.</h1><p>Hemming, alterations, custom garments, and repairs from seamstresses near you. See their work, compare starting prices, and request a quote without chasing messages.</p><div class="home-search"><div class="field"><label for="home-service">What do you need?</label><select id="home-service"><option>What do you need?</option><option>Hemming</option><option>Alterations</option><option>Repairs</option><option>Custom garment</option></select></div><div class="field"><label for="home-area">Where?</label><select id="home-area"><option>Where?</option><option>Goleta</option><option>Downtown</option><option>Riviera</option></select></div><button class="btn" onclick="location.hash='#/search'">Search</button></div></div></section></div>`;
+}
+
+function renderMapView(){
+  main.innerHTML=`<div class="page map-page"><div class="section-head search-heading"><h1>Find a seamstress</h1><div class="view-actions"><button onclick="location.hash='#/search'">List</button><button class="active">Map</button><button onclick="toast('Favorites are stored locally in this prototype')">Favorite seamstress</button></div></div><div class="stitched-rule"></div><div class="map-view-layout">${mapPreview()}<div class="map-results">${providers.map(p=>`<a href="#/seamstress/${p.id}" class="card map-result"><img src="${p.image}" alt="${esc(p.name)}"><span><strong>${esc(p.name)}</strong><small>${esc(p.studio)} · ${esc(p.area)}</small><b>From ${money(p.price)} · ★ ${p.rating}</b></span></a>`).join('')}</div></div></div>`;
+}
+
+function renderHelp(){
+  main.innerHTML=`<div class="page simple-page"><h1>Help</h1><p class="simple-lead">Describe what you need done. Threadly suggests up to three sewists in Santa Barbara or Goleta, each with a service they already offer.</p><div class="stitched-rule"></div><form id="help-form" class="help-form"><div class="field"><label for="job-description">Job description</label><textarea id="job-description" placeholder="Hem these jeans, take in a dress…" required></textarea></div><div class="field"><label for="job-area">Area</label><select id="job-area"><option>Santa Barbara or Goleta</option><option>Santa Barbara</option><option>Goleta</option></select></div><button class="btn">Suggest sewists</button></form><div class="spool-pattern" aria-hidden="true"><span>◉╱╲</span><span>◉╱╲</span><span>◉╱╲</span></div></div>`;
+  document.querySelector('#help-form').onsubmit=e=>{e.preventDefault();state.filter={service:'All services',area:'All areas'};location.hash='#/search';toast('Suggested sewists shown for your test request');};
+}
+
+function renderAbout(){
+  main.innerHTML=`<div class="page simple-page about-page"><h1>About Threadly</h1><p class="about-tagline">Connecting you to the people who sew.</p><div class="stitched-rule"></div><section class="card story-card"><h2>Why this matters</h2><p>Most people want to keep wearing the clothes they already own, but finding a trusted local sewist is harder than it should be. Yelp and Google show names, not portfolios. Instagram takes forever. Dry cleaners offer alterations without showing who actually does the work or what it costs.</p><p>Threadly puts nearby seamstresses in one place: real work, starting prices, and a simple way to request a quote. That helps people repair and alter instead of replacing, which is good for your wardrobe, your wallet, and less waste.</p></section><section class="card story-card"><h2>Who it's for</h2><p>Shoppers who buy secondhand, mend what they can, and still need a skilled sewist for hems, repairs, and fit. Threadly is built for customers first. Browse, compare, and reach out without chasing DMs.</p></section><section class="card story-card"><h2>How it works</h2><ol class="steps"><li><span>1</span>Search by service and neighborhood.</li><li><span>2</span>Compare seamstresses on the map or in the list.</li><li><span>3</span>Open a profile and see the portfolio and starting prices.</li><li><span>4</span>Send a quote request in one form.</li></ol><div class="form-actions"><a class="btn" href="#/search">Find a seamstress</a><a class="btn btn-secondary" href="#/map">View map</a></div></section></div>`;
+}
+
+function renderQuoteRequest(id){
+  const p=providers.find(x=>x.id===id)||providers[0];
+  main.innerHTML=`<div class="page request-page"><form id="request-form" class="card request-card"><h1>Request a quote</h1><p class="muted">${esc(p.studio)}</p><div class="field"><label for="request-service">Service</label><select id="request-service" required><option value="">Select a service</option>${p.services.map(s=>`<option>${esc(s)}</option>`).join('')}</select></div><div class="field"><label for="request-description">Describe the item and change you want</label><textarea id="request-description" required></textarea></div><div class="field"><label for="request-name">Your name</label><input id="request-name" required></div><div class="field"><label for="request-email">Email</label><input id="request-email" type="email" required></div><div class="field"><label for="request-phone">Phone</label><input id="request-phone" type="tel"></div><button class="btn request-submit">Send request</button><p class="small muted safe-note">Testing only: no request is sent to a real business.</p></form></div>`;
+  document.querySelector('#request-form').onsubmit=e=>{e.preventDefault();toast('Request saved for preview — nothing was sent');location.hash=`#/seamstress/${p.id}`;};
+}
+
 function renderPublicProfile(id){
   const p=providers.find(x=>x.id===id)||providers[2];
   const isTaytum=p.id==='taytum';
   const about=isTaytum?"Taytum has been sewing for three years and runs Taytum Nykelle, a Goleta-based sewing business and clothing line. She specializes in precise, clean hemming and made-to-order custom pieces designed around each client's measurements and style.":(p.id==='odette'?state.profile.bio:`${p.name} is a local specialist focused on ${p.services.join(', ').toLowerCase()}.`);
   const prices=isTaytum?[['Hemming','$20'],['Custom garment','$150'],['Custom order consultation','Free'],['Basic alterations','$25'],['Repairs','$15']]:p.services.map((s,i)=>[s,money(p.price+i*18)]);
-  main.innerHTML=`<div class="page profile-page"><section class="profile-hero"><img class="profile-photo" src="${p.image}" alt="${esc(p.name)} of ${esc(p.studio)}"><div class="profile-title"><div class="profile-heading"><h1>${esc(p.name)}</h1><button class="favorite profile-favorite" aria-label="Add ${esc(p.name)} to favorites">♡</button>${p.verified?'<span class="verified">Verified</span>':''}</div><p class="muted studio-name">${esc(p.studio)}</p><p class="muted">${esc(p.area)}</p><div class="profile-meta"><span class="rating">★ ${p.rating}</span><span>${isTaytum?'3 years experience':'Experienced local sewist'}</span></div><p class="muted small">Usually replies within a few hours</p><button class="btn" onclick="openCustomerQuote('${p.id}')">Request a quote</button></div></section><div class="stitched-rule"></div>
+  main.innerHTML=`<div class="page profile-page"><section class="profile-hero"><img class="profile-photo" src="${p.image}" alt="${esc(p.name)} of ${esc(p.studio)}"><div class="profile-title"><div class="profile-heading"><h1>${esc(p.name)}</h1><button class="favorite profile-favorite" aria-label="Add ${esc(p.name)} to favorites">♡</button>${p.verified?'<span class="verified">Verified</span>':''}</div><p class="muted studio-name">${esc(p.studio)}</p><p class="muted">${esc(p.area)}</p><div class="profile-meta"><span class="rating">★ ${p.rating}</span><span>${isTaytum?'3 years experience':'Experienced local sewist'}</span></div><p class="muted small">Usually replies within a few hours</p><a class="btn" href="#/request/${p.id}">Request a quote</a></div></section><div class="stitched-rule"></div>
     <section class="card content-card meet-card"><h2>Meet ${esc(p.name)}</h2><p>${esc(about)}</p></section>
     <section class="portfolio-section"><h2>Portfolio</h2><div class="portfolio">${isTaytum?['1','2','3'].map(n=>`<img src="./assets/portfolio-${n}.jpg.png" alt="Taytum Nykelle portfolio ${n}">`).join(''):`<img src="${p.image}" alt="${esc(p.name)} portfolio"><img src="${p.image}" alt="${esc(p.name)} portfolio detail"><img src="${p.image}" alt="${esc(p.name)} studio work">`}</div></section>
-    <div class="profile-bottom"><section class="card content-card"><h2>Services & starting prices</h2>${prices.map(([s,price])=>`<div class="service-row"><span>${esc(s)}</span><strong>${price==='Free'?'Free':`From ${price}`}</strong></div>`).join('')}</section><aside><section class="card content-card"><h2>Hours</h2><p>Mon–Fri 10am–6pm, Sat by appointment</p></section><section class="card content-card turnaround-card"><h2>Turnaround</h2><p>${esc(p.turnaround)}</p></section><button class="btn profile-cta" onclick="openCustomerQuote('${p.id}')">Request a quote</button></aside></div></div>`;
+    <div class="profile-bottom"><section class="card content-card"><h2>Services & starting prices</h2>${prices.map(([s,price])=>`<div class="service-row"><span>${esc(s)}</span><strong>${price==='Free'?'Free':`From ${price}`}</strong></div>`).join('')}</section><aside><section class="card content-card"><h2>Hours</h2><p>Mon–Fri 10am–6pm, Sat by appointment</p></section><section class="card content-card turnaround-card"><h2>Turnaround</h2><p>${esc(p.turnaround)}</p></section><a class="btn profile-cta" href="#/request/${p.id}">Request a quote</a></aside></div></div>`;
 }
 
 function openCustomerQuote(id){
