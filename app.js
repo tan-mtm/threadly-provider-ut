@@ -70,7 +70,21 @@ function renderHome(){
 }
 
 function renderMapView(){
-  main.innerHTML=`<div class="page map-page"><div class="section-head search-heading"><h1>Find a seamstress</h1><div class="view-actions"><button onclick="location.hash='#/search'">List</button><button class="active">Map</button><button onclick="toast('Favorites are stored locally in this prototype')">Favorite seamstress</button></div></div><div class="stitched-rule"></div><div class="map-view-layout">${mapPreview()}<div class="map-results">${providers.map(p=>`<a href="#/seamstress/${p.id}" class="card map-result"><img src="${p.image}" alt="${esc(p.name)}"><span><strong>${esc(p.name)}</strong><small>${esc(p.studio)} · ${esc(p.area)}</small><b>From ${money(p.price)} · ★ ${p.rating}</b></span></a>`).join('')}</div></div></div>`;
+  const filtered = providers.filter(p => (state.filter.service==='All services'||p.services.includes(state.filter.service)) && (state.filter.area==='All areas'||p.area===state.filter.area));
+  main.innerHTML=`<div class="page map-page"><div class="section-head search-heading"><h1>Map</h1><div class="view-actions" aria-label="View"><button onclick="location.hash='#/search'">List</button><button class="active">Map</button><button onclick="toast('Favorites are stored locally in this prototype')">Favorite seamstress</button></div></div><div class="stitched-rule"></div><div class="search-filters map-filters" role="search"><div class="field"><label for="map-service-filter">Service</label><select id="map-service-filter">${['All services','Hemming','Alterations','Repairs','Custom garment','Wedding dress','Tailoring'].map(x=>`<option ${x===state.filter.service?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label for="map-area-filter">Area</label><select id="map-area-filter">${['All areas','Goleta','Downtown','Riviera','Funk Zone'].map(x=>`<option ${x===state.filter.area?'selected':''}>${x}</option>`).join('')}</select></div></div><div id="customer-map" class="customer-map" role="region" aria-label="Map of seamstresses in Santa Barbara and Goleta"></div></div>`;
+  const applyMapFilters=()=>{ state.filter.service=document.querySelector('#map-service-filter').value; state.filter.area=document.querySelector('#map-area-filter').value; renderMapView(); };
+  document.querySelector('#map-service-filter').onchange=applyMapFilters;
+  document.querySelector('#map-area-filter').onchange=applyMapFilters;
+  initCustomerMap(filtered);
+}
+
+function initCustomerMap(items){
+  if(!window.L){ document.querySelector('#customer-map').innerHTML='<div class="map-unavailable">Map tiles are temporarily unavailable.</div>'; return; }
+  const coordinates={taytum:[34.4388,-119.8307],marisol:[34.4208,-119.7047],odette:[34.4371,-119.6946],jamie:[34.4122,-119.6921],priya:[34.4451,-119.8524]};
+  const map=L.map('customer-map',{zoomControl:true,scrollWheelZoom:false}).setView([34.425,-119.755],12);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © <a href="https://www.esri.com/">Esri</a>',maxZoom:19}).addTo(map);
+  const markerIcon=L.divIcon({className:'threadly-marker-wrap',html:'<span class="threadly-marker"></span>',iconSize:[26,34],iconAnchor:[13,32],popupAnchor:[0,-30]});
+  items.forEach(p=>L.marker(coordinates[p.id],{icon:markerIcon,keyboard:true,title:p.name}).addTo(map).bindPopup(`<a class="map-popup" href="#/seamstress/${p.id}"><strong>${esc(p.name)}</strong><span>${esc(p.studio)} · ${esc(p.area)}</span><b>From ${money(p.price)} · ★ ${p.rating}</b></a>`));
 }
 
 function renderHelp(){
