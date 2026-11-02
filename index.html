@@ -31,6 +31,12 @@
         <div class="ticker-track"><span class="stars">★★★★★</span><span>“I needed a hem and Threadly showed me sewists nearby. Sending a quote request was easy, and I could still see it after I refreshed.” Maya</span><span class="stars">★★★★★</span><span>“I used to spend the evening messaging people. Threadly let me compare starting prices and ask for a quote in one place.” Luis</span><span class="stars">★★★★★</span><span>“I could see their work before I reached out.” Elena</span></div>
       </div>
     </header>
+    <div id="sew-transition" class="sew-transition" aria-hidden="true">
+      <span class="sew-spool"><i></i></span>
+      <span class="sew-thread"></span>
+      <span class="sew-needle"></span>
+      <span class="sew-label">Stitching your next page…</span>
+    </div>
     <main id="main" tabindex="-1"></main>
     <footer class="site-footer" aria-label="Site footer">
       <div class="footer-inner">
@@ -61,7 +67,7 @@
       </div>
       <div class="footer-bottom">
         <p><strong>Usability-testing prototype.</strong> No real bookings or payments are processed. Test entries stay in this browser.</p>
-        <div class="footer-meta"><span>© 2026 Threadly</span><button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top ↑</button></div>
+        <div class="footer-meta"><span>© 2026 Threadly</span><button id="motion-toggle" type="button" aria-pressed="true">Motion: on</button><button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top ↑</button></div>
       </div>
     </footer>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
