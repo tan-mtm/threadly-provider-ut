@@ -32,7 +32,7 @@ function setActive(area){
   document.querySelectorAll('[data-nav],[data-page]').forEach(a=>a.classList.toggle('active',a.dataset.nav===area||a.dataset.page===area));
 }
 function route(){
-  const hash = location.hash || '#/search';
+  const hash = location.hash || '#/home';
   if(hash.startsWith('#/provider')){ setActive('provider'); renderProvider(hash.replace('#/provider','') || '/'); }
   else if(hash==='#/home'){ setActive('home'); renderHome(); }
   else if(hash==='#/map'){ setActive('map'); renderMapView(); }
